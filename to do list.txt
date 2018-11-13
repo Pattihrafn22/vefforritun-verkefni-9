@@ -1,9 +1,0 @@
-Á eftir að bæta rest af domain uppl.
-
-Á eftir að bæta við loading gif
-
-Á eftir að fjarlægja results þegar kallað er á ný results
-
-Á eftir að koma í veg fyrir tómastrengin
-
-https://www.youtube.com/watch?v=3FrbQcf1T3s&feature=youtu.be

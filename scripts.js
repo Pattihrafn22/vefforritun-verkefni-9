@@ -1,20 +1,42 @@
 // const API_URL = '/example.json?domain=';
 const API_URL = 'https://apis.is/isnic?domain=';
 
-document.addEventListener('DOMContentLoaded', () => {
-  const domains = document.querySelector('.domains');
-  program.init(domains);
-});
-
-
 /**
- * Leit að lénum á Íslandi gegnum apis.is
- */
+* Leit að lénum á Íslandi gegnum apis.is
+*/
 const program = (() => {
   let domains;
 
+  function clearContainer(container) {
+    while (container.firstChild) {
+      container.removeChild(container.firstChild);
+    }
+  }
+
+  function convertDate(date) {
+    return date.toISOString().split('T')[0];
+  }
+
+  function loading() {
+    const container = domains.querySelector('.results');
+    clearContainer(container);
+    const div = document.createElement('div');
+    const img = document.createElement('img');
+    const text = document.createElement('text');
+    div.classList.add('loading');
+
+    img.setAttribute('src', 'loading.gif');
+    div.appendChild(img);
+
+    text.appendChild(document.createTextNode('Leita að léni...'));
+    div.appendChild(text);
+
+    container.appendChild(div);
+  }
 
   function addDomainData(dl, string, data) {
+    if (data === '') return;
+
     const dt = document.createElement('dt');
     dt.appendChild(document.createTextNode(string));
 
@@ -25,64 +47,66 @@ const program = (() => {
     dl.appendChild(dd);
   }
 
-  function displayResults(domainList) {
-    const container = domains.querySelector('.results');
-    if (domainList === 0 ) {
-      displayError("Lén er ekki skráð");
-      return;
-    }
-    const [{ domain, registered, lastChange, expires, registrantname, email, address, country }] = domainList;
-    const dl = document.createElement('dl');
-    container.appendChild(dl);
-    addDomainData(dl, "Lén", domain);
-    
-  }
-
-
   function displayError(error) {
     const container = domains.querySelector('.results');
-
-    while (container.firstChild) {
-      container.removeChild(container.firstChild);
-    }
+    clearContainer(container);
 
     container.appendChild(document.createTextNode(error));
   }
 
+  function displayResults(domainList) {
+    const container = domains.querySelector('.results');
+    clearContainer(container);
 
-  function fetchData(domain) {
-    fetch(`${API_URL}${domain}`)
-      .then((response) => {
-          if (response.ok) {
-            return response.json();
-          }
+    if (domainList.length === 0) {
+      displayError('Lén er ekki skráð');
+      return;
+    }
 
-          throw new Error('Villa kom upp');
-      })
-      .then((data) => {
-        console.log(data);
-        displayResults(data.results);
-      })
-      .catch((error) => {
-        displayError('Villa við að sækja gögn')
-      })
+    const [{
+      domain, registered, lastChange, expires, registrantname, email, address, country,
+    }] = domainList;
+    const dl = document.createElement('dl');
+    container.appendChild(dl);
+    addDomainData(dl, 'Lén', domain);
+    addDomainData(dl, 'Skráð', convertDate(new Date(registered)));
+    addDomainData(dl, 'Síðast breytt', convertDate(new Date(lastChange)));
+    addDomainData(dl, 'Rennur út', convertDate(new Date(expires)));
+    addDomainData(dl, 'Skráningaraðili', registrantname);
+    addDomainData(dl, 'Netfang', email);
+    addDomainData(dl, 'Heimilisfang', address);
+    addDomainData(dl, 'Land', country);
   }
 
-    function onSubmit(e) {
-      e.preventDefault();
-      const input = e.target.querySelector('input');
+  function fetchData(domain) {
+    loading();
+    fetch(`${API_URL}${domain}`)
+      .then((response) => {
+        if (response.ok) {
+          return response.json();
+        }
 
-      // TODO hönda tóma streng
-      fetchData(input.value);
+        throw new Error('Villa kom upp');
+      })
+      .then((data) => {
+        displayResults(data.results);
+      })
+      .catch(() => {
+        displayError('Villa við að sækja gögn');
+      });
+  }
 
+  function onSubmit(e) {
+    e.preventDefault();
+    const input = e.target.querySelector('input');
+
+    if (input.value.trim() === '') {
+      displayError('Lén verður að vera strengur');
+      input.value = '';
+      return;
     }
-    
-  
-
-
-
-
-
+    fetchData(input.value);
+  }
 
   function init(_domains) {
     domains = _domains;
@@ -96,4 +120,7 @@ const program = (() => {
   };
 })();
 
-
+document.addEventListener('DOMContentLoaded', () => {
+  const domains = document.querySelector('.domains');
+  program.init(domains);
+});
